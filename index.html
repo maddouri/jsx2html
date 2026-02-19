@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSX to JS to HTML</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/modern-normalize@3.0.1/modern-normalize.min.css" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f8f8f8;
+        --fg: #000000;
+        --border: #e5e5e5;
+      }
+
+      html[data-theme="dark"] {
+        --bg: #181818;
+        --fg: #e0e0e0;
+        --border: #2b2b2b;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--fg);
+      }
+
+      body,
+      html {
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 0.75rem 1rem 1rem 1rem;
+      }
+
+      .container {
+        height: 100%;
+        width: 100%;
+
+        flex: 1;
+        display: flex;
+        gap: 1rem;
+
+        /* Flexbox shrink fix:
+         * Flex items default to min-height: auto, which prevents shrinking
+         * below their content's minimum size. Monaco's internal DOM has a
+         * ~100px min-content height, so without this, the editors won't shrink
+         * immediately when the window height decreases.
+         */
+        min-height: 0;
+      }
+
+      .code-editor {
+        flex: 1;
+        border: 1px solid var(--border);
+
+        /* Allow editors to shrink fully inside a flex container */
+        min-height: 0;
+        min-width: 0;
+      }
+
+      #page-title {
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 0 0 0.75rem 0;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        /* gap: 0.25rem; */
+      }
+
+      #theme-toggle,
+      #github-link {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.9em;
+
+        border: none;
+        background: none;
+        color: var(--fg); /* theme-aware icon color */
+
+        cursor: pointer;
+        /* border-radius: 6px; */
+
+        /* subtle presence */
+        opacity: 0.7;
+        transition:
+          opacity 0.2s ease,
+          transform 0.1s ease;
+      }
+
+      #theme-toggle:hover,
+      #github-link:hover {
+        opacity: 1; /* gentle highlight */
+      }
+    </style>
+
+    <!-- Needed for monaco-editor https://stackoverflow.com/a/76553340/865719 -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/vscode-codicons@0.0.17/dist/codicon.min.css" rel="stylesheet"> -->
+    <link href="https://cdn.jsdelivr.net/npm/@vscode/codicons@0.0.44/dist/codicon.min.css" rel="stylesheet" />
+    <style>
+      /* (re)Fetch the "codicon" font from the CDN because codicon.css tries to fetch it from "./codicon.ttf"
+       * which fails because we don't serve it (nor do we want to serve it).
+       * The following is a copy/paste of the relevant part of "codicon.css" but with the CDN URL instead of "./"
+       */
+      @font-face {
+        font-family: "codicon";
+        src: url("https://cdn.jsdelivr.net/npm/@vscode/codicons@0.0.44/dist/codicon.ttf?c7330ef9199d97dc5b8aae3449a5dc27")
+          format("truetype");
+        font-display: block;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.1/babel.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.8.1/standalone.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.8.1/plugins/html.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.8.1/plugins/babel.min.js"></script>
+    <!-- estree seems to be needed by prettier/plugins/babel  -->
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.8.1/plugins/estree.min.js"></script>
+  </head>
+
+  <body>
+    <h1 id="page-title">
+      JSX to JS to HTML Converter
+      <div class="header-actions">
+        <a
+          id="github-link"
+          href="https://github.com/maddouri/jsx2html"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="View source on GitHub"
+        ></a>
+        <button id="theme-toggle" aria-label="Toggle theme">Toggle Theme</button>
+      </div>
+    </h1>
+
+    <div class="container">
+      <div class="code-editor" id="code-editor-input"></div>
+      <div class="code-editor" id="code-editor-output-js"></div>
+      <div class="code-editor" id="code-editor-output-html"></div>
+    </div>
+
+    <script type="module">
+      // Set up the editors ////////////////////////////////////////////////////////////////////////
+      // https://stackoverflow.com/a/76553340/865719
+      // https://stackoverflow.com/a/79568880/865719
+      import * as monaco from "https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/+esm";
+
+      // Editor creation options
+      // https://microsoft.github.io/monaco-editor/docs.html#functions/editor_editor_api.editor.create.html
+      // https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor_editor_api.editor.IStandaloneEditorConstructionOptions.html
+      const editorDefaultOptions = {
+        value: "",
+        automaticLayout: true,
+        stickyScroll: { enabled: false },
+        tabSize: 2,
+        insertSpaces: true,
+      };
+
+      const monacoInputEditor = await monaco.editor.create(document.getElementById("code-editor-input"), {
+        // Using JS syntax until JSX support is added upstream https://github.com/microsoft/monaco-editor/issues/264
+        language: "typescript",
+        readOnly: false,
+        ...editorDefaultOptions,
+      });
+
+      const monacoOutputEditorJs = await monaco.editor.create(document.getElementById("code-editor-output-js"), {
+        language: "javascript",
+        readOnly: true,
+        ...editorDefaultOptions,
+      });
+
+      const monacoOutputEditorHtml = await monaco.editor.create(document.getElementById("code-editor-output-html"), {
+        language: "html",
+        readOnly: true,
+        ...editorDefaultOptions,
+      });
+
+      // Misc //////////////////////////////////////////////////////////////////////////////////////
+
+      async function loadIcon(url) {
+        const res = await fetch(url);
+        return await res.text(); // returns raw <svg>...</svg>
+      }
+
+      document.getElementById("github-link").innerHTML = await loadIcon(
+        "https://cdn.jsdelivr.net/npm/lucide-static@0.265.0/icons/github.svg",
+      );
+
+      // Set up the theme switching logic //////////////////////////////////////////////////////////
+
+      async function setupThemeToggle() {
+        const sunIconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.265.0/icons/sun.svg");
+        const moonIconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.265.0/icons/moon.svg");
+
+        const toggleBtn = document.getElementById("theme-toggle");
+
+        function setTheme(mode) {
+          document.documentElement.setAttribute("data-theme", mode);
+          monaco.editor.setTheme(mode === "dark" ? "vs-dark" : "vs");
+          toggleBtn.innerHTML = mode === "dark" ? sunIconSvg : moonIconSvg;
+
+          console.log(`Theme changed to ${mode}`);
+        }
+
+        let currentTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+        setTheme(currentTheme);
+
+        toggleBtn.addEventListener("click", () => {
+          currentTheme = currentTheme === "light" ? "dark" : "light";
+          setTheme(currentTheme);
+        });
+      }
+      await setupThemeToggle();
+
+      // Set up the rendering sandbox //////////////////////////////////////////////////////////////
+
+      const appOrigin = window.location.origin;
+
+      let renderingSandboxIFrame = null;
+
+      function setupRenderingSandbox() {
+        const iframeHtml = `<!doctype html>
+<html lang="en">
+<body>
+    <div id="root"></div>
+
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"><\/script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"><\/script>
+
+    <script>
+      console.log("Rendering sandbox loading...");
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+
+      window.addEventListener('message', (event) => {
+        try {
+          const fn = new Function("React", event.data.code);
+          const element = fn(React);
+
+          ReactDOM.flushSync(() => {
+            root.render(element);
+          });
+
+          parent.postMessage(
+            { html: document.getElementById('root').innerHTML },
+            '${appOrigin}'
+          );
+        } catch (e) {
+          parent.postMessage({ error: e.message }, '${appOrigin}');
+        }
+      });
+    <\/script>
+</body>
+</html>
+`;
+        // https://stackoverflow.com/a/44211814/865719
+        const blob = new Blob([iframeHtml], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const i = document.createElement("iframe");
+        i.src = url;
+        i.sandbox = "allow-scripts";
+        i.id = "rendering-sandbox";
+        i.style = "display:none;";
+        document.body.appendChild(i);
+
+        i.addEventListener("load", () => {
+          URL.revokeObjectURL(url);
+          renderingSandboxIFrame = i;
+          console.log("Rendering sandbox loaded");
+        });
+
+        console.log("Rendering sandbox configured", url);
+      }
+      setupRenderingSandbox();
+
+      // Set up the conversion system //////////////////////////////////////////////////////////////
+
+      // Wait for all libraries to load
+      function checkReady() {
+        if (Babel && renderingSandboxIFrame) {
+          console.log("All libraries loaded");
+          setupConverter();
+        } else {
+          setTimeout(checkReady, 10);
+        }
+      }
+
+      async function asyncWriteToEditor(monacoEditor, prettierParser, content) {
+        // https://prettier.io/docs/api
+        if (prettierParser) {
+          const prettyContent = await prettier.format(content, {
+            parser: prettierParser,
+            plugins: prettierPlugins,
+            htmlWhitespaceSensitivity: "ignore",
+          });
+          monacoEditor.setValue(prettyContent);
+        } else {
+          monacoEditor.setValue(content);
+        }
+      }
+
+      async function convertInputEditorContent() {
+        console.log("New conversion");
+        try {
+          const inputEditorContent = monacoInputEditor.getValue();
+
+          // const transformedToAutomaticRuntime = Babel.transform(inputEditorContent, {
+          //     // presets: ['react']
+          //     // presets: [ ["react", { runtime: "classic" }] ]
+          //     presets: [ ["react", { runtime: "automatic" }], ["typescript", { allExtensions: true, isTSX: true }] ]
+          // }).code;
+          // await asyncWriteToEditor(monacoOutputEditorJs, "babel", transformedToAutomaticRuntime);
+
+          const transformedToClassicRuntime = Babel.transform(inputEditorContent, {
+            presets: [
+              ["react", { runtime: "classic" }],
+              ["typescript", { allExtensions: true, isTSX: true }],
+            ],
+          }).code;
+          await asyncWriteToEditor(monacoOutputEditorJs, "babel", transformedToClassicRuntime);
+
+          function wrapTransformedCode(code) {
+            const ast = Babel.packages.parser.parse(code, {
+              sourceType: "module",
+              // plugins: ["javascript"]
+            });
+
+            const t = Babel.packages.types;
+            const body = ast.program.body;
+
+            if (body.length < 1) {
+              body.push(
+                t.returnStatement(t.stringLiteral('Nothing to render. Did you write an "expression" to render?')),
+              );
+            }
+
+            const last = body[body.length - 1];
+
+            if (t.isExpressionStatement(last)) {
+              // Replace last statement with a return
+              body[body.length - 1] = t.returnStatement(last.expression);
+            } else {
+              body.push(
+                t.returnStatement(t.stringLiteral('Nothing to render. Did you write an "expression" to render?')),
+              );
+            }
+
+            // We could wrap everything in a function
+            // const func = t.functionExpression(
+            //     t.identifier("renderMe"),
+            //     [],
+            //     t.blockStatement(body)
+            // );
+            //
+            // const call = t.callExpression(func, []);
+            //
+            // return Babel.packages.generator.generate(call).code;
+
+            // For now, simply return the code block.
+            // It will be wrapped in a "new Function()" by the rendering sandbox
+            return Babel.packages.generator.generate(t.blockStatement(body)).code;
+          }
+
+          const transformedToClassicRuntimeWithReturn = wrapTransformedCode(transformedToClassicRuntime);
+
+          // Using appOrigin as the target origin doesn't seem to work.
+          // Perhaps due to the iframe's use of sandbox="allow-scripts" without "allow-same-origin" ? I'm not sure.
+          renderingSandboxIFrame.contentWindow.postMessage({ code: transformedToClassicRuntimeWithReturn }, "*");
+        } catch (e) {
+          monacoOutputEditorJs.setValue("Error: " + e.message);
+          monacoOutputEditorHtml.setValue("Error: " + e.message);
+        }
+      }
+
+      async function setupConverter() {
+        window.addEventListener("message", async (event) => {
+          // The iframe uses sandbox="allow-scripts" without "allow-same-origin".
+          // Therefore:
+          // * It has an opaque origin and event.origin will be "null"
+          // * For now, we'll check event.source only
+
+          // Ignore unrelated messages
+          if (event.source !== renderingSandboxIFrame.contentWindow) {
+            return;
+          }
+
+          console.log("Received html result:", event);
+          console.log("event.data:", event.data);
+
+          if (event.data.error) {
+            monacoOutputEditorHtml.setValue("Error: " + event.data.error);
+          } else if (event.data.html !== undefined) {
+            await asyncWriteToEditor(monacoOutputEditorHtml, "html", event.data.html);
+          }
+        });
+
+        monacoInputEditor.onDidChangeModelContent(convertInputEditorContent);
+
+        // Some sample JSX
+        monacoInputEditor.setValue(
+          `const Foo = () => {
+  return <button>Click me from Foo</button>;
+}
+
+type BarProps = {
+  name: string;
+};
+
+function Bar({name}: BarProps) {
+  return (
+    <div>
+      <label>Hello {name} from Bar</label>
+      <Foo/>
+    </div>
+  );
+}
+
+// Add a JSX expression to render as HTML, e.g.:
+<>
+  <h1>This is some JSX to render as HTML</h1>
+  <Bar name={"My Name"}/>
+  <p>Footer</p>
+</>
+`,
+        );
+      }
+
+      checkReady();
+    </script>
+  </body>
+</html>
