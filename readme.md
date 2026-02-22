@@ -1,24 +1,18 @@
 # JSX → JS → HTML
 
+**https://jsx2html.js.org | https://maddouri.github.io/jsx2html | [index.html](./index.html)**
+
 A single-file, zero-build interactive tool that shows how JSX becomes the HTML a browser actually renders.
 
 Paste or edit JSX/TSX on the left, then watch Babel's compiled JavaScript and the final rendered HTML update live beside it.
 
 ![screenshot](./screenshot.png)
 
-## Usage
-
-Just open [`index.html`](./index.html) in a web browser — no build step, no server, no `npm install`.
-
-## What it does
-
 | Panel            | Content                                                              |
 | ---------------- | -------------------------------------------------------------------- |
 | 1. JSX / TSX     | Editable input — write any JSX or TSX here                           |
 | 2. Compiled JS   | Babel output using the classic runtime (`React.createElement` calls) |
 | 3. Rendered HTML | The actual DOM innerHTML after React renders your component tree     |
-
-TypeScript types are stripped automatically, so TSX works out of the box.
 
 ## Credits / Dependencies (all CDN, no install)
 
