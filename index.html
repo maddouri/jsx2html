@@ -427,7 +427,7 @@
         }
       }
 
-      async function setupConverter() {
+      function setupConverter() {
         window.addEventListener("message", async (event) => {
           // The iframe uses sandbox="allow-scripts" without "allow-same-origin".
           // Therefore:
