@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JSX to JS to HTML</title>
 
+    <link
+      rel="icon"
+      href="https://cdn.jsdelivr.net/npm/lucide-static@0.575.0/icons/code-xml.svg"
+      sizes="any"
+      type="image/svg+xml"
+    />
+
     <link href="https://cdn.jsdelivr.net/npm/modern-normalize@3.0.1/modern-normalize.min.css" rel="stylesheet" />
     <style>
       :root {
@@ -226,14 +233,14 @@
       }
 
       document.getElementById("github-link").innerHTML = await loadIcon(
-        "https://cdn.jsdelivr.net/npm/lucide-static@0.265.0/icons/github.svg",
+        "https://cdn.jsdelivr.net/npm/lucide-static@0.575.0/icons/github.svg",
       );
 
       // Set up the theme switching logic //////////////////////////////////////////////////////////
 
       async function setupThemeToggle() {
-        const sunIconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.265.0/icons/sun.svg");
-        const moonIconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.265.0/icons/moon.svg");
+        const sunIconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.575.0/icons/sun.svg");
+        const moonIconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.575.0/icons/moon.svg");
 
         const toggleBtn = document.getElementById("theme-toggle");
 
