@@ -12,11 +12,11 @@ Just open [`index.html`](./index.html) in a web browser — no build step, no se
 
 ## What it does
 
-| Panel           | Content                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| ① JSX / TSX     | Editable input — write any JSX or TSX here                           |
-| ② Compiled JS   | Babel output using the classic runtime (`React.createElement` calls) |
-| ③ Rendered HTML | The actual DOM innerHTML after React renders your component tree     |
+| Panel            | Content                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| 1. JSX / TSX     | Editable input — write any JSX or TSX here                           |
+| 2. Compiled JS   | Babel output using the classic runtime (`React.createElement` calls) |
+| 3. Rendered HTML | The actual DOM innerHTML after React renders your component tree     |
 
 TypeScript types are stripped automatically, so TSX works out of the box.
 

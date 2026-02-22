@@ -9,7 +9,8 @@
     />
     <title>JSX to JS to HTML</title>
 
-    <link id="favicon" rel="icon" href="" sizes="any" type="image/svg+xml" />
+    <!-- Defer favicon https://stackoverflow.com/a/13416784/865719 -->
+    <link id="favicon" rel="icon" href="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" sizes="any" type="image/svg+xml" />
 
     <link href="https://cdn.jsdelivr.net/npm/modern-normalize@3.0.1/modern-normalize.min.css" rel="stylesheet" />
     <style>
@@ -175,15 +176,17 @@
 
     <div class="container">
       <div class="editor-panel">
-        <div class="editor-label">① JSX / TSX <span class="editor-label-sub">— you write this</span></div>
+        <div class="editor-label">1. JSX / TSX <span class="editor-label-sub">— you write this</span></div>
         <div class="code-editor" id="code-editor-input"></div>
       </div>
       <div class="editor-panel">
-        <div class="editor-label">② Compiled JS <span class="editor-label-sub">— Babel outputs this</span></div>
+        <div class="editor-label">2. Compiled JS <span class="editor-label-sub">— Babel outputs this</span></div>
         <div class="code-editor" id="code-editor-output-js"></div>
       </div>
       <div class="editor-panel">
-        <div class="editor-label">③ Rendered HTML <span class="editor-label-sub">— the browser renders this</span></div>
+        <div class="editor-label">
+          3. Rendered HTML <span class="editor-label-sub">— the browser renders this</span>
+        </div>
         <div class="code-editor" id="code-editor-output-html"></div>
       </div>
     </div>
