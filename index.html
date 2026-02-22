@@ -9,12 +9,7 @@
     />
     <title>JSX to JS to HTML</title>
 
-    <link
-      rel="icon"
-      href="https://cdn.jsdelivr.net/npm/lucide-static@0.575.0/icons/code-xml.svg"
-      sizes="any"
-      type="image/svg+xml"
-    />
+    <link id="favicon" rel="icon" href="" sizes="any" type="image/svg+xml" />
 
     <link href="https://cdn.jsdelivr.net/npm/modern-normalize@3.0.1/modern-normalize.min.css" rel="stylesheet" />
     <style>
@@ -194,6 +189,21 @@
     </div>
 
     <script type="module">
+      // Set up favicon ////////////////////////////////////////////////////////////////////////////
+
+      const faviconSvg = await loadIcon("https://cdn.jsdelivr.net/npm/lucide-static@0.575.0/icons/code-xml.svg");
+
+      // https://stackoverflow.com/a/75608527/865719
+      function setupFavicon(color) {
+        const iconlink = document.querySelector("link#favicon");
+        var iconcolor = "blue";
+        const serialized = faviconSvg.replace("currentColor", color);
+
+        const dataurl = "data:image/svg+xml;base64," + btoa(serialized);
+        iconlink.setAttribute("href", dataurl);
+      }
+      // The favicon will be properly set in the theme handling logic
+
       // Set up the editors ////////////////////////////////////////////////////////////////////////
       // https://stackoverflow.com/a/76553340/865719
       // https://stackoverflow.com/a/79568880/865719
@@ -252,6 +262,13 @@
           document.documentElement.setAttribute("data-theme", mode);
           monaco.editor.setTheme(mode === "dark" ? "vs-dark" : "vs");
           toggleBtn.innerHTML = mode === "dark" ? sunIconSvg : moonIconSvg;
+
+          // Generate a random favicon color while we wait for an official non-hacky way of getting colors from monaco's theme
+          // https://github.com/microsoft/monaco-editor/issues/4031#issuecomment-1596150839
+          // https://css-tricks.com/snippets/javascript/random-hex-color/
+          const faviconColor = Math.floor(Math.random() * 16777215).toString(16);
+          console.log(`New favicon color: #${faviconColor}`);
+          setupFavicon(`#${faviconColor}`);
 
           console.log(`Theme changed to ${mode}`);
         }
