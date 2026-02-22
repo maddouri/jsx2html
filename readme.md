@@ -1,6 +1,6 @@
-# JSX → JS → HTML
+# JSX to JS to HTML Converter
 
-**https://jsx2html.js.org | https://maddouri.github.io/jsx2html | [index.html](./index.html)**
+## [jsx2html.js.org](https://jsx2html.js.org/) | [maddouri.github.io/jsx2html](https://maddouri.github.io/jsx2html) | [index.html](./index.html)
 
 A single-file, zero-build interactive tool that shows how JSX becomes the HTML a browser actually renders.
 
